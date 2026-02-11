@@ -1,6 +1,5 @@
 #include "linux_parser.h"
 
-#include <bits/confname.h>
 #include <unistd.h>
 
 #include <filesystem>
