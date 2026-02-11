@@ -1,8 +1,5 @@
 #include "linux_parser.h"
 
-#include <dirent.h>
-#include <unistd.h>
-
 #include <filesystem>
 #include <sstream>
 #include <string>
@@ -50,6 +47,7 @@ string LinuxParser::Kernel() {
 }
 
 // BONUS: Update this to use std::filesystem
+// Updated to the C++ way
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   std::filesystem::path path(kProcDirectory);
@@ -67,14 +65,13 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
 float LinuxParser::MemoryUtilization() {
-  std::ifstream stream(kProcDirectory + kMeminfoFilename);
-  float memTotal, memFree;
+  std::ifstream fstream(kProcDirectory + kMeminfoFilename);
+  float memTotal = 0.0, memFree = 0.0, buffers = 0.0, cached = 0.0;
 
-  if (stream.is_open()) {
+  if (fstream.is_open()) {
     std::string line;
-    while (std::getline(stream, line)) {
+    while (std::getline(fstream, line)) {
       std::stringstream linestream(line);
       std::string key, value;
       linestream >> key >> value;
@@ -82,22 +79,32 @@ float LinuxParser::MemoryUtilization() {
         memTotal = stof(value);
       } else if (key == "MemFree:") {
         memFree = stof(value);
+      } else if (key == "Buffers:") {
+        buffers = stof(value);
+      } else if (key == "Cached:") {
+        cached = stof(value);
       }
       // This stops further scanning of the file
-      // because memTotal and memFree will be set by then
-      if (memTotal > 0.0 && memFree > 0.0) {
+      // because all values will be set by then
+      if (memTotal > 0.0 && memFree > 0.0 && buffers > 0.0 && cached > 0.0) {
         break;
       }
     }
-  } else {
-    return 0.0;
   }
 
-  return (memTotal-memFree) / memTotal;
+  // Prevents division by zero if fstream cannot open the file
+  if (memTotal == 0.0) return 0.0;
+
+  float usedMemory = memTotal - memFree - buffers - cached;
+  return usedMemory / memTotal;
 }
 
 // TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+long LinuxParser::UpTime() {
+  std::ifstream stream(kProcDirectory + kUptimeFilename);
+
+  return 0;
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
