@@ -225,7 +225,9 @@ string LinuxParser::Ram(int pid) {
       std::istringstream linestream(line);
       linestream >> key >> value;
       if (key == "VmRSS:") {
-        return std::to_string(value / 1024.0);
+        std::ostringstream ostream;
+        ostream << std::fixed << std::setprecision(1) << (value / 1024.0);
+        return ostream.str();
       }
     }
   }
