@@ -17,10 +17,7 @@ int Process::Pid() { return pid_; }
 
 float Process::CpuUtilization() const {
   long total_time = LinuxParser::ActiveJiffies(pid_);
-  long uptime = LinuxParser::UpTime();
-  long start_time = LinuxParser::UpTime(pid_);
-
-  long seconds = uptime - start_time;
+  long seconds = LinuxParser::UpTime(pid_);
 
   if (seconds > 0)
     return (static_cast<float>(total_time) / sysconf(_SC_CLK_TCK)) / seconds;
@@ -37,5 +34,5 @@ string Process::User() { return LinuxParser::User(pid_); }
 long int Process::UpTime() { return LinuxParser::UpTime(pid_); }
 
 bool Process::operator<(const Process &a) const {
-  return a.CpuUtilization() < this->CpuUtilization();
+  return this->CpuUtilization() < a.CpuUtilization();
 }

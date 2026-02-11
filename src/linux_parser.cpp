@@ -69,7 +69,7 @@ vector<int> LinuxParser::Pids() {
 
 float LinuxParser::MemoryUtilization() {
   std::ifstream fstream(kProcDirectory + kMeminfoFilename);
-  float memTotal = 0.0, memFree = 0.0, buffers = 0.0, cached = 0.0;
+  float memTotal = 0.0, memFree = 0.0;
 
   if (fstream.is_open()) {
     std::string line;
@@ -81,14 +81,10 @@ float LinuxParser::MemoryUtilization() {
         memTotal = stof(value);
       } else if (key == "MemFree:") {
         memFree = stof(value);
-      } else if (key == "Buffers:") {
-        buffers = stof(value);
-      } else if (key == "Cached:") {
-        cached = stof(value);
       }
       // This stops further scanning of the file
       // because all values will be set by then
-      if (memTotal > 0.0 && memFree > 0.0 && buffers > 0.0 && cached > 0.0) {
+      if (memTotal > 0.0 && memFree > 0.0) {
         break;
       }
     }
@@ -97,8 +93,7 @@ float LinuxParser::MemoryUtilization() {
   // Prevents division by zero if fstream cannot open the file
   if (memTotal == 0.0) return 0.0;
 
-  float usedMemory = memTotal - memFree - buffers - cached;
-  return usedMemory / memTotal;
+  return (memTotal - memFree) / memTotal;
 }
 
 long LinuxParser::UpTime() {
@@ -230,7 +225,7 @@ string LinuxParser::Ram(int pid) {
       std::istringstream linestream(line);
       linestream >> key >> value;
       if (key == "VmRSS:") {
-        return std::to_string(value / 1024);
+        return std::to_string(value / 1024.0);
       }
     }
   }
