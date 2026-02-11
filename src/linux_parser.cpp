@@ -112,6 +112,8 @@ long LinuxParser::UpTime() {
 
 long LinuxParser::Jiffies() {
   auto values = CpuUtilization();
+  if (values.empty()) return 0;
+
   long totalJiffies = 0;
   for (const string& value:values) {
     totalJiffies += stol(value);
@@ -131,8 +133,10 @@ long LinuxParser::ActiveJiffies(int pid) {
     while (linestream >> value) {
       values.push_back(value);
     }
-    for (int i = 14; i <= 17; ++i) {
-      totalJiffiesForPID += stol(values[i]);
+    if (values.size() > 17) {
+      for (int i = 13; i < 17; ++i) {
+        totalJiffiesForPID += stol(values[i]);
+      }
     }
   }
   return totalJiffiesForPID;
@@ -147,10 +151,14 @@ long LinuxParser::ActiveJiffies() {
 long LinuxParser::IdleJiffies() {
   auto values = CpuUtilization();
 
-  long idle = std::stol(values[CPUStates::kIdle_]);
-  long iowait = std::stol(values[CPUStates::kIOwait_]);
+  if (values.size() > kIOwait_) {
+    long idle = std::stol(values[kIdle_]);
+    long iowait = std::stol(values[kIOwait_]);
 
-  return idle + iowait;
+    return idle + iowait;
+  }
+
+  return 0;
 }
 
 vector<string> LinuxParser::CpuUtilization() {
@@ -159,6 +167,7 @@ vector<string> LinuxParser::CpuUtilization() {
 
   if (fstream.is_open()) {
     std::string line,key,value;
+    std::getline(fstream, line);
     std::istringstream linestream(line);
     // This step captures the cpu text so we can loop next over the values
     linestream >> key;
@@ -220,7 +229,7 @@ string LinuxParser::Ram(int pid) {
     while (std::getline(ifstream,line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      if (key == "VmSize:") {
+      if (key == "VmRSS:") {
         return std::to_string(value / 1024);
       }
     }
